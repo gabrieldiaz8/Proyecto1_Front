@@ -30,12 +30,9 @@ export default function HomePage() {
               Contacto
             </Link>
           </nav>
-          <Button
-            onClick={() => (window.location.href = "/login")}
-            className="bg-principal hover:bg-hoverPrincipal text-white rounded-full px-6"
-          >
+          <Link to="/login" className="bg-principal hover:bg-hoverPrincipal text-white rounded-full px-6 py-2">
             Ingresar
-          </Button>
+          </Link>
         </div>
       </header>
 
