@@ -24,7 +24,7 @@ import ConsultarPersonal from "./componentes/gestion-organizacion/personal/utils
 function App() {
   return (
     <ThemeProvider>
-      <Router>
+      <Router basename="/Proyecto1_Front/">
         <Routes>
           <Route path="/" element={<HomePage />} />
           <Route path="/login" element={<LoginPage />} />

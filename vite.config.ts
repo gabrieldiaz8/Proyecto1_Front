@@ -2,6 +2,7 @@ import { defineConfig } from 'vite'
 import react from '@vitejs/plugin-react'
 
 export default defineConfig({
+  base: '/Proyecto1_Front/', // Ruta del directorio
   plugins: [react()],
   server: {
     host: true, // Permite que el servidor sea accesible desde fuera del contenedor
