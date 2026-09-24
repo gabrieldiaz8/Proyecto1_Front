@@ -1,5 +1,6 @@
 import { defineConfig } from 'vite'
 import react from '@vitejs/plugin-react'
+/// <reference types="vitest" />
 
 export default defineConfig({
   base: '/', // Ruta del directorio
@@ -10,5 +11,10 @@ export default defineConfig({
     watch: {
       usePolling: true, // Necesario para que Vite detecte cambios dentro del contenedor
     },
+  },
+  test: {
+    environment: "jsdom",
+    globals: true,
+    setupFiles: ["./src/test/setup.ts"],
   },
 })
