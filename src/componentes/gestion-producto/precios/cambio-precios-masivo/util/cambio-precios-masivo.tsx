@@ -18,6 +18,10 @@ import { getUsuarioId } from "../../../../../utils/auth";
 import { useCambioPrecios } from "../hooks/useCambioPrecios";
 import TablaCambioPrecios from "../componentes/tabla-cambio-precios";
 import FiltrosCambioPrecios from "../componentes/filtros-cambio-precios";
+// CR-006: Ajuste masivo de precios
+import ProductoService from "../../producto/services/producto-service";
+import { useConfirmarAjusteMasivo } from "../hooks/useConfirmarAjusteMasivo";
+import AjustePreciosMasivoForm from "../componentes/ajuste-precios-masivo-form";
 
 export default function CambioPreciosMasivo() {
   const [error, setError] = useState<string | null>(null);
@@ -25,11 +29,15 @@ export default function CambioPreciosMasivo() {
   const [productoSeleccionado, setProductoSeleccionado] = useState<ConsultarProductosCambioPreciosMasivo>(
     {} as ConsultarProductosCambioPreciosMasivo
   );
+  // CR-006: estado de visibilidad del modal de ajuste masivo
+  const [mostrarAjusteMasivo, setMostrarAjusteMasivo] = useState(false);
 
   const usuarioId = getUsuarioId();
   const { configuracion } = useConfiguracionSistema();
   const { alerts, addAlert, removeAlert } = useAlerts();
   const { showConfirmation, AlertasConfirmacion } = useConfirmation();
+  // CR-006: hook de confirmación previa al ajuste masivo
+  const { confirmarAjuste, AlertasConfirmacion: AlertasConfirmacionAjuste } = useConfirmarAjusteMasivo();
 
   const {
     setFiltrosNecesarios,
@@ -358,6 +366,7 @@ export default function CambioPreciosMasivo() {
                 fetchMarcas={fetchMarcas}
                 fetchLineas={fetchLineas}
                 onLimpiarFiltros={handleLimpiarFiltros}
+                onAbrirAjusteMasivo={() => setMostrarAjusteMasivo(true)}
               />
               <CardContent className="p-0">
                 <TablaCambioPrecios
@@ -371,6 +380,8 @@ export default function CambioPreciosMasivo() {
 
             <Alertas alerts={alerts} onRemove={removeAlert} />
             <AlertasConfirmacion />
+            {/* CR-006: diálogo de confirmación del ajuste masivo */}
+            <AlertasConfirmacionAjuste />
           </>
         )}
       </div>
@@ -385,6 +396,36 @@ export default function CambioPreciosMasivo() {
             />
           </div>
         </div>
+      )}
+
+      {/* CR-006: modal de formulario de ajuste masivo */}
+      {mostrarAjusteMasivo && (
+        <AjustePreciosMasivoForm
+          onClose={() => setMostrarAjusteMasivo(false)}
+          onSubmitValues={(payload) =>
+            confirmarAjuste(payload, async (payloadConfirmado) => {
+              setMostrarAjusteMasivo(false);
+              try {
+                await ProductoService.actualizarPreciosMasivo(payloadConfirmado);
+                addAlert({
+                  type: TipoAlerta.SUCCESS,
+                  title: TituloAlerta.SUCCESS,
+                  message: "Ajuste masivo procesado con éxito.",
+                  autoClose: true,
+                  duration: 4000,
+                });
+              } catch {
+                addAlert({
+                  type: TipoAlerta.ERROR,
+                  title: TituloAlerta.ERROR,
+                  message: "Ocurrió un error al intentar procesar el ajuste masivo.",
+                  autoClose: true,
+                  duration: 5000,
+                });
+              }
+            })
+          }
+        />
       )}
     </div>
   );

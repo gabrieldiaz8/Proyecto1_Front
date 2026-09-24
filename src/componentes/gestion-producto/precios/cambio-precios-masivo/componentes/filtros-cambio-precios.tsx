@@ -1,4 +1,4 @@
-import { Search, Package, Check, Save, Eraser } from "lucide-react";
+import { Search, Package, Check, Save, Eraser, TrendingUp } from "lucide-react";
 import { useState } from "react";
 import Select from "react-select";
 import { CardHeader, CardTitle } from "../../../../ui/Card";
@@ -19,6 +19,8 @@ type Props = {
     fetchMarcas: () => void;
     fetchLineas: () => void;
     onLimpiarFiltros: () => void;
+    // CR-006: abre el modal de ajuste masivo de precios
+    onAbrirAjusteMasivo: () => void;
 };
 
 export default function FiltrosCambioPrecios({
@@ -33,7 +35,8 @@ export default function FiltrosCambioPrecios({
   onGuardarCambios,
   fetchMarcas,
   fetchLineas,
-  onLimpiarFiltros
+  onLimpiarFiltros,
+  onAbrirAjusteMasivo,
 }: Props) {
   const [porcentaje, setPorcentaje] = useState<number>(0);
   return (
@@ -297,6 +300,17 @@ export default function FiltrosCambioPrecios({
                       disabled={productosLength === 0}
                     >
                       <Save className="w-4 h-4" />
+                    </Button>
+
+                    {/* CR-006: botón de ajuste masivo */}
+                    <Button
+                      variant="outline"
+                      onClick={onAbrirAjusteMasivo}
+                      className="self-end bg-emerald-600 text-white hover:bg-emerald-800"
+                      title="Ajuste Masivo de Precios"
+                    >
+                      <TrendingUp className="w-4 h-4 mr-1" />
+                      Ajuste Masivo
                     </Button>
                   </div> 
                   
