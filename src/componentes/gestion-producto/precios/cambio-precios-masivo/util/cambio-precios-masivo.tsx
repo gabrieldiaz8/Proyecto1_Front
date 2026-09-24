@@ -22,6 +22,8 @@ import FiltrosCambioPrecios from "../componentes/filtros-cambio-precios";
 import ProductoService from "../../producto/services/producto-service";
 import { useConfirmarAjusteMasivo } from "../hooks/useConfirmarAjusteMasivo";
 import AjustePreciosMasivoForm from "../componentes/ajuste-precios-masivo-form";
+import AjustePreciosResultadoModal from "../componentes/ajuste-precios-resultado-modal";
+import { AjustePreciosMasivoResponse } from "../../../../../interfaces/gestion-producto/precios/interfaces-precios";
 
 export default function CambioPreciosMasivo() {
   const [error, setError] = useState<string | null>(null);
@@ -31,6 +33,8 @@ export default function CambioPreciosMasivo() {
   );
   // CR-006: estado de visibilidad del modal de ajuste masivo
   const [mostrarAjusteMasivo, setMostrarAjusteMasivo] = useState(false);
+  // CR-006: resultado de la operación masiva — null = modal cerrado
+  const [resultadoAjuste, setResultadoAjuste] = useState<AjustePreciosMasivoResponse | null>(null);
 
   const usuarioId = getUsuarioId();
   const { configuracion } = useConfiguracionSistema();
@@ -406,14 +410,8 @@ export default function CambioPreciosMasivo() {
             confirmarAjuste(payload, async (payloadConfirmado) => {
               setMostrarAjusteMasivo(false);
               try {
-                await ProductoService.actualizarPreciosMasivo(payloadConfirmado);
-                addAlert({
-                  type: TipoAlerta.SUCCESS,
-                  title: TituloAlerta.SUCCESS,
-                  message: "Ajuste masivo procesado con éxito.",
-                  autoClose: true,
-                  duration: 4000,
-                });
+                const response = await ProductoService.actualizarPreciosMasivo(payloadConfirmado);
+                setResultadoAjuste(response);
               } catch {
                 addAlert({
                   type: TipoAlerta.ERROR,
@@ -427,6 +425,12 @@ export default function CambioPreciosMasivo() {
           }
         />
       )}
+
+      {/* CR-006: modal de resumen de resultados */}
+      <AjustePreciosResultadoModal
+        resultado={resultadoAjuste}
+        onClose={() => setResultadoAjuste(null)}
+      />
     </div>
   );
 }
