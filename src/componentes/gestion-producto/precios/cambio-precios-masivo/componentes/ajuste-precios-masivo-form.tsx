@@ -1,12 +1,12 @@
 import { useEffect } from "react";
-import { useForm, Controller } from "react-hook-form";
+import { useForm, Controller, Resolver } from "react-hook-form";
 import { yupResolver } from "@hookform/resolvers/yup";
 import Select from "react-select";
 import { TrendingUp } from "lucide-react";
-import { Card, CardContent, CardFooter } from "../../../ui/Card";
-import { Button } from "../../../ui/Button";
+import { Card, CardContent, CardFooter } from "../../../../ui/Card";
+import { Button } from "../../../../ui/Button";
 import { useCatalogosContext } from "../../../../../context/catalogos-context";
-import { schemaPreciosMasivo } from "../../producto/interfaces/interfaces-validaciones-precios-masivo";
+import { schemaPreciosMasivo } from "../../../producto/interfaces/interfaces-validaciones-precios-masivo";
 import { AjustePreciosMasivoPayload } from "../../../../../interfaces/gestion-producto/precios/interfaces-precios";
 
 // FormValues es local al componente, espejo de AjustePreciosMasivoPayload
@@ -46,7 +46,7 @@ export default function AjustePreciosMasivoForm({ onClose, onSubmitValues }: Pro
     resetField,
     formState: { errors, isValid },
   } = useForm<FormValues>({
-    resolver: yupResolver(schemaPreciosMasivo),
+    resolver: yupResolver(schemaPreciosMasivo) as Resolver<FormValues>,
     mode: "onChange",
     defaultValues: {
       tipoAjuste: "AUMENTO",
