@@ -56,6 +56,9 @@ export const schema = (utilizaStockMinimo: boolean, utilizaPack: boolean, usaOfe
       .trim()
       .lowercase()
       .required("La denominación es obligatoria.")
+      .test("not-only-spaces", "La denominación no puede contener solo espacios.", (value) => {
+        return value ? value.trim().length > 0 : false;
+      })
       .max(255, "Máximo 255 caracteres.")
       .matches(/^[A-Za-z0-9 %-_"'áéíóúÁÉÍÓÚñÑ./]+$/, "Solo se permiten letras, números y espacios."),
     observacion: yup.string().optional().nullable(),
@@ -63,8 +66,21 @@ export const schema = (utilizaStockMinimo: boolean, utilizaPack: boolean, usaOfe
     codigoReferencia: yup.string().optional().nullable(),
     codigoBarra: yup.string().optional().max(255, "Máximo 255 caracteres.").nullable(),
     stock: yup.number().optional().nullable(),
-    costo: yup.number().typeError("El costo debe ser un valor númerico").required("El costo es obligatorio").min(0,"El costo debe ser mayor o igual a 0"),
-    porcentaje: yup.number().typeError("El porcentaje debe ser un valor númerico").min(0,"El porcentaje mínimo debe ser mayor o igual a 0").max(999, "El porcentaje máximo permitido es de 999").optional().default(0).nullable(),
+    costo: yup.number().typeError("El costo debe ser un valor númerico").required("El costo es obligatorio").min(0,"El costo debe ser mayor o igual a 0")
+      .test("precio-no-infinity-costo", "El costo es demasiado grande y causa un desbordamiento en el cálculo del precio.", function(costoValue) {
+        const { porcentaje } = this.parent;
+        if (costoValue == null) return true;
+        const porcentajeVal = porcentaje ?? 0;
+        const precioCalculado = costoValue * (1 + porcentajeVal / 100);
+        return precioCalculado !== Infinity && !isNaN(precioCalculado);
+      }),
+    porcentaje: yup.number().typeError("El porcentaje debe ser un valor númerico").min(0,"El porcentaje mínimo debe ser mayor o igual a 0").max(999, "El porcentaje máximo permitido es de 999").optional().default(0).nullable()
+      .test("precio-no-infinity-porcentaje", "El porcentaje es demasiado grande y causa un desbordamiento en el cálculo del precio.", function(porcentajeValue) {
+        const { costo } = this.parent;
+        if (porcentajeValue == null || costo == null) return true;
+        const precioCalculado = costo * (1 + porcentajeValue / 100);
+        return precioCalculado !== Infinity && !isNaN(precioCalculado);
+      }),
     /* costoEnDolar: yup.boolean().optional().nullable(),
     costoDolar: yup.number().optional().nullable(),
     destacado: yup.boolean().optional().nullable(),
