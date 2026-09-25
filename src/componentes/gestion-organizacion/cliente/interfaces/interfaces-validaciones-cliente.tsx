@@ -32,7 +32,7 @@ export const schema = (requiereCuit: boolean, requiereDocumento: boolean) =>
       })
       .max(255, "Máximo 255 caracteres.")
 
-      .matches(/^[A-Za-z0-9 %-_"'áéíóúÁÉÍÓÚñÑ./]+$/, "Solo se permiten letras, números y espacios."),
+      .matches(/^[A-Za-z0-9 %\-_"'áéíóúÁÉÍÓÚñÑ./]+$/, "Solo se permiten letras, números y espacios."),
 
     denominacionAfip: yup.string().optional().nullable().max(255, "Máximo 255 caracteres."),
     cuit: yup.string().when([], {

@@ -60,7 +60,7 @@ export const schema = (utilizaStockMinimo: boolean, utilizaPack: boolean, usaOfe
         return value ? value.trim().length > 0 : false;
       })
       .max(255, "Máximo 255 caracteres.")
-      .matches(/^[A-Za-z0-9 %-_"'áéíóúÁÉÍÓÚñÑ./]+$/, "Solo se permiten letras, números y espacios."),
+      .matches(/^[A-Za-z0-9 %\-_"'áéíóúÁÉÍÓÚñÑ./]+$/, "Solo se permiten letras, números y espacios."),
     observacion: yup.string().optional().nullable(),
     codigoProveedor: yup.string().optional().nullable(),
     codigoReferencia: yup.string().optional().nullable(),
