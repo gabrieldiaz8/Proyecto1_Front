@@ -27,20 +27,39 @@ export const schema = (requiereCuit: boolean, requiereDocumento: boolean) =>
       .trim()
       .lowercase()
       .required("La denominación es obligatoria.")
+      .test("not-only-spaces", "La denominación no puede contener solo espacios.", (value) => {
+        return value ? value.trim().length > 0 : false;
+      })
       .max(255, "Máximo 255 caracteres.")
 
-      .matches(/^[A-Za-z0-9 %-_"'áéíóúÁÉÍÓÚñÑ./]+$/, "Solo se permiten letras, números y espacios."),
+      .matches(/^[A-Za-z0-9 %\-_"'áéíóúÁÉÍÓÚñÑ./]+$/, "Solo se permiten letras, números y espacios."),
 
     denominacionAfip: yup.string().optional().nullable().max(255, "Máximo 255 caracteres."),
     cuit: yup.string().when([], {
       is: () => requiereCuit,
-      then: (schema) => schema.required("El CUIT es obligatorio."),
-      otherwise: (schema) => schema.optional(),
+      then: (schema) => schema.required("El CUIT es obligatorio.")
+        .matches(/^\d+$/, "El CUIT debe contener solo números.")
+        .test("cuit-length", "El CUIT debe tener exactamente 11 dígitos.", (value) => {
+          return value ? value.length === 11 : true;
+        }),
+      otherwise: (schema) => schema.optional()
+        .test("cuit-format-optional", "El CUIT debe contener solo números y tener exactamente 11 dígitos.", (value) => {
+          if (!value) return true; // Si está vacío, es válido (es opcional)
+          return /^\d{11}$/.test(value);
+        }),
     }),
     dni: yup.string().when([], {
       is: () => requiereDocumento,
-      then: (schema) => schema.required("El DNI es obligatorio."),
-      otherwise: (schema) => schema.optional(),
+      then: (schema) => schema.required("El DNI es obligatorio.")
+        .matches(/^\d+$/, "El DNI debe contener solo números.")
+        .test("dni-length", "El DNI debe tener entre 7 y 8 dígitos.", (value) => {
+          return value ? (value.length === 7 || value.length === 8) : true;
+        }),
+      otherwise: (schema) => schema.optional()
+        .test("dni-format-optional", "El DNI debe contener solo números y tener entre 7 y 8 dígitos.", (value) => {
+          if (!value) return true; // Si está vacío, es válido (es opcional)
+          return /^\d{7,8}$/.test(value);
+        }),
     }),
     observacion: yup.string().optional().nullable(),
     codigo: yup.string().optional().nullable(),

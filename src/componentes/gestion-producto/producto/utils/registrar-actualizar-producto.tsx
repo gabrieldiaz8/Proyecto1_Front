@@ -90,6 +90,13 @@ export default function RegistrarActualizarProductoForm({
   const cantidadPorPack = watch("cantidadPorPack");
   const utilizaStockMinimo = watch("utilizaStockMinimo");
   const utilizaPack = watch("utilizaPack");
+  const costo = watch("costo");
+  const porcentaje = watch("porcentaje");
+  
+  // Calcular precio en vivo
+  const precioCalculado = costo && porcentaje !== undefined 
+    ? Number((costo * (1 + porcentaje / 100)).toFixed(2))
+    : 0;
   
 
   //=============================== CONSTANTES PARA MOVIMIENTO ENTRE CAMPOS ==================================
@@ -373,11 +380,11 @@ export default function RegistrarActualizarProductoForm({
                   />
                   <PriceInput
                     name="precio"
-                    label="Precio"
-                    value={watch("precio") || 0}
-                    onChange={(value) => setValue("precio", value, { shouldValidate: true })}
+                    label="Precio (calculado)"
+                    value={precioCalculado}
+                    onChange={() => {}} // No hace nada, es solo lectura
                     maxDigits={9}
-                    disabled={producto && producto.sistema > 0 ? true : false}
+                    disabled={true}
                   />
                   <PorcentajeInput
                     name="porcentaje"
