@@ -23,13 +23,6 @@ import { getUsuarioId } from "../../../../../utils/auth";
 import { useCambioPrecios } from "../hooks/useCambioPrecios";
 import TablaCambioPrecios from "../componentes/tabla-cambio-precios";
 import FiltrosCambioPrecios from "../componentes/filtros-cambio-precios";
-// CR-006: Ajuste masivo de precios
-import ProductoService from "../../../producto/services/producto-service";
-import { useConfirmarAjusteMasivo } from "../hooks/useConfirmarAjusteMasivo";
-import AjustePreciosMasivoForm from "../componentes/ajuste-precios-masivo-form";
-import AjustePreciosResultadoModal from "../componentes/ajuste-precios-resultado-modal";
-import { AjustePreciosMasivoResponse } from "../../../../../interfaces/gestion-producto/precios/interfaces-precios";
-
 export default function CambioPreciosMasivo() {
   const [error, setError] = useState<string | null>(null);
   const [mostrarActualizarProducto, setMostrarActualizarProducto] =
@@ -38,19 +31,10 @@ export default function CambioPreciosMasivo() {
     useState<ConsultarProductosCambioPreciosMasivo>(
       {} as ConsultarProductosCambioPreciosMasivo,
     );
-  // CR-006: estado de visibilidad del modal de ajuste masivo
-  const [mostrarAjusteMasivo, setMostrarAjusteMasivo] = useState(false);
-  // CR-006: resultado de la operación masiva — null = modal cerrado
-  const [resultadoAjuste, setResultadoAjuste] =
-    useState<AjustePreciosMasivoResponse | null>(null);
-
   const usuarioId = getUsuarioId();
   const { configuracion } = useConfiguracionSistema();
   const { alerts, addAlert, removeAlert } = useAlerts();
   const { showConfirmation, AlertasConfirmacion } = useConfirmation();
-  // CR-006: hook de confirmación previa al ajuste masivo
-  const { confirmarAjuste, AlertasConfirmacion: AlertasConfirmacionAjuste } =
-    useConfirmarAjusteMasivo();
 
   const {
     setFiltrosNecesarios,
@@ -72,13 +56,13 @@ export default function CambioPreciosMasivo() {
     actualizarProductoLocal,
   } = useCambioPrecios(usuarioId);
 
-  const { marcas, lineas, sublineas, setLineas, setMarcas, setSublineas } =
+  const { marcas, lineas, setLineas, setMarcas } =
     useCatalogosContext();
 
   useEffect(() => {
     limpiarFiltros();
     setBuscar({ cont: 0, componente: "cambio-precios-masivo" });
-    setFiltrosNecesarios({ marca: true, linea: true, sublinea: true });
+    setFiltrosNecesarios({ marca: true, linea: true });
   }, []);
 
   const fetchMarcas = useCallback(async () => {
@@ -127,24 +111,7 @@ export default function CambioPreciosMasivo() {
     fetchLineas();
   }, [buscarLineas]);
 
-  useEffect(() => {
-    const fetchSublineas = async () => {
-      setError(null);
-      try {
-        if (valoresFiltros.lineaId && valoresFiltros.lineaId !== 0) {
-          const sublineasTotales =
-            await CambioPreciosMasivoService.obtenerTotalesPara(
-              valoresFiltros.lineaId || 0,
-              "sublineas",
-            );
-          setSublineas(sublineasTotales.data);
-        }
-      } catch {
-        setError("No se pudieron cargar las sublíneas.");
-      }
-    };
-    fetchSublineas();
-  }, [valoresFiltros.lineaId]);
+
 
   const handleAbrirActualizarProducto = useCallback(
     (producto: ConsultarProductosCambioPreciosMasivo) => {
@@ -200,13 +167,11 @@ export default function CambioPreciosMasivo() {
       denominacionLinea: "",
       marcaId: undefined,
       lineaId: undefined,
-      sublineaId: undefined,
     });
-    setSublineas([]);
     setLineas([]);
     setMarcas([]);
     setProductos([]);
-  }, [setValoresFiltros, setSublineas, setLineas, setMarcas, setProductos]);
+  }, [setValoresFiltros, setLineas, setMarcas, setProductos]);
 
   const handleActualizarSuccess = useCallback(
     (productoActualizado: ConsultarProductosCambioPreciosMasivo) => {
@@ -374,13 +339,11 @@ export default function CambioPreciosMasivo() {
                 setValoresFiltros={setValoresFiltros}
                 marcas={marcas}
                 lineas={lineas}
-                sublineas={sublineas}
                 productosLength={productos.length}
                 onBuscar={() =>
                   buscarProductos({
                     marcaId: valoresFiltros.marcaId,
                     lineaId: valoresFiltros.lineaId,
-                    subLineaId: valoresFiltros.sublineaId,
                   })
                 }
                 onAplicarCambios={aplicarCambios}
@@ -388,7 +351,6 @@ export default function CambioPreciosMasivo() {
                 fetchMarcas={fetchMarcas}
                 fetchLineas={fetchLineas}
                 onLimpiarFiltros={handleLimpiarFiltros}
-                onAbrirAjusteMasivo={() => setMostrarAjusteMasivo(true)}
               />
               <CardContent className="p-0">
                 <TablaCambioPrecios
@@ -402,8 +364,6 @@ export default function CambioPreciosMasivo() {
 
             <Alertas alerts={alerts} onRemove={removeAlert} />
             <AlertasConfirmacion />
-            {/* CR-006: diálogo de confirmación del ajuste masivo */}
-            <AlertasConfirmacionAjuste />
           </>
         )}
       </div>
@@ -419,40 +379,6 @@ export default function CambioPreciosMasivo() {
           </div>
         </div>
       )}
-
-      {/* CR-006: modal de formulario de ajuste masivo */}
-      {mostrarAjusteMasivo && (
-        <AjustePreciosMasivoForm
-          onClose={() => setMostrarAjusteMasivo(false)}
-          onSubmitValues={(payload) =>
-            confirmarAjuste(payload, async (payloadConfirmado) => {
-              setMostrarAjusteMasivo(false);
-              try {
-                const response =
-                  await ProductoService.actualizarPreciosMasivo(
-                    payloadConfirmado,
-                  );
-                setResultadoAjuste(response);
-              } catch {
-                addAlert({
-                  type: TipoAlerta.ERROR,
-                  title: TituloAlerta.ERROR,
-                  message:
-                    "Ocurrió un error al intentar procesar el ajuste masivo.",
-                  autoClose: true,
-                  duration: 5000,
-                });
-              }
-            })
-          }
-        />
-      )}
-
-      {/* CR-006: modal de resumen de resultados */}
-      <AjustePreciosResultadoModal
-        resultado={resultadoAjuste}
-        onClose={() => setResultadoAjuste(null)}
-      />
     </div>
   );
 }

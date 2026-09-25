@@ -1,4 +1,4 @@
-import { Search, Package, Check, Save, Eraser, TrendingUp } from "lucide-react";
+import { Search, Package, Check, Save, Eraser } from "lucide-react";
 import { useState } from "react";
 import Select from "react-select";
 import { CardHeader, CardTitle } from "../../../../ui/Card";
@@ -11,7 +11,6 @@ type Props = {
     setValoresFiltros: any; 
     marcas: any[]; 
     lineas: any[]; 
-    sublineas: any[]; 
     productosLength: number; 
     onBuscar: () => void; 
     onAplicarCambios: (porcentaje: number) => void; 
@@ -19,8 +18,6 @@ type Props = {
     fetchMarcas: () => void;
     fetchLineas: () => void;
     onLimpiarFiltros: () => void;
-    // CR-006: abre el modal de ajuste masivo de precios
-    onAbrirAjusteMasivo: () => void;
 };
 
 export default function FiltrosCambioPrecios({
@@ -28,7 +25,6 @@ export default function FiltrosCambioPrecios({
   setValoresFiltros,
   marcas,
   lineas,
-  sublineas,
   productosLength,
   onBuscar,
   onAplicarCambios,
@@ -36,7 +32,6 @@ export default function FiltrosCambioPrecios({
   fetchMarcas,
   fetchLineas,
   onLimpiarFiltros,
-  onAbrirAjusteMasivo,
 }: Props) {
   const [porcentaje, setPorcentaje] = useState<number>(0);
   return (
@@ -169,44 +164,7 @@ export default function FiltrosCambioPrecios({
                     </div>
                   </div>
 
-                  <div className="space-y-3 mt-14">
-                    <div>
-                      <Select
-                        value={(sublineas ?? []).find((option) => option.id === valoresFiltros.sublineaId) || null}
-                        options={sublineas ?? []}
-                        getOptionLabel={(option) => option.denominacion}
-                        getOptionValue={(option) => String(option.id)}
-                        onChange={(option) =>
-                          setValoresFiltros({
-                            ...valoresFiltros,
-                            sublineaId: option ? option.id : undefined,
-                          })
-                        }
-                        placeholder="Seleccione una sublínea"
-                        className="text-black"
-                        menuPortalTarget={document.body}
-                        styles={{
-                          control: (base) => ({
-                            ...base,
-                            color: "black",
-                          }),
-                          singleValue: (base) => ({
-                            ...base,
-                            color: "black",
-                          }),
-                          option: (base, { isSelected, isFocused }) => ({
-                            ...base,
-                            color: isSelected ? "white" : "black",
-                            backgroundColor: isSelected ? "#3b82f6" : isFocused ? "#93c5fd" : "white",
-                          }),
-                          menuPortal: (base) => ({
-                            ...base,
-                            zIndex: 9999,
-                          }),
-                        }}
-                      />
-                    </div>
-                  </div>
+
 
                   {/* <Button
                     variant="outline"
@@ -300,17 +258,6 @@ export default function FiltrosCambioPrecios({
                       disabled={productosLength === 0}
                     >
                       <Save className="w-4 h-4" />
-                    </Button>
-
-                    {/* CR-006: botón de ajuste masivo */}
-                    <Button
-                      variant="outline"
-                      onClick={onAbrirAjusteMasivo}
-                      className="self-end bg-emerald-600 text-white hover:bg-emerald-800"
-                      title="Ajuste Masivo de Precios"
-                    >
-                      <TrendingUp className="w-4 h-4 mr-1" />
-                      Ajuste Masivo
                     </Button>
                   </div> 
                   

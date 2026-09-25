@@ -1,11 +1,12 @@
-import { useEffect } from "react";
+import { useState, useEffect } from "react";
 import { useForm, Controller, Resolver } from "react-hook-form";
 import { yupResolver } from "@hookform/resolvers/yup";
 import Select from "react-select";
 import { TrendingUp } from "lucide-react";
 import { Card, CardContent, CardFooter } from "../../../../ui/Card";
 import { Button } from "../../../../ui/Button";
-import { useCatalogosContext } from "../../../../../context/catalogos-context";
+import ApiService from "../../../../../utils/apiService";
+import { SelectLinea } from "../../../../../interfaces/gestion-producto/linea/interfaces-linea";
 import { schemaPreciosMasivo } from "../../../producto/interfaces/interfaces-validaciones-precios-masivo";
 import { AjustePreciosMasivoPayload } from "../../../../../interfaces/gestion-producto/precios/interfaces-precios";
 
@@ -36,7 +37,23 @@ interface Props {
 }
 
 export default function AjustePreciosMasivoForm({ onClose, onSubmitValues }: Props) {
-  const { lineas } = useCatalogosContext();
+  const [lineas, setLineas] = useState<SelectLinea[]>([]);
+
+  useEffect(() => {
+    const fetchLineas = async () => {
+      try {
+        const response = await ApiService.get(
+          "/producto/find-all-for-lineas/select",
+          { denominacion: "" },
+        );
+        const data = Array.isArray(response) ? response : response?.data ?? [];
+        setLineas(data);
+      } catch (err) {
+        console.error("Error al cargar líneas para ajuste masivo:", err);
+      }
+    };
+    fetchLineas();
+  }, []);
 
   const {
     register,
@@ -78,7 +95,7 @@ export default function AjustePreciosMasivoForm({ onClose, onSubmitValues }: Pro
   };
 
   return (
-    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-2 sm:p-4">
+    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-40 p-2 sm:p-4">
       <Card className="w-full max-w-lg bg-white mx-auto shadow-lg rounded-2xl overflow-hidden relative">
         {/* Encabezado */}
         <div className="form-header">
