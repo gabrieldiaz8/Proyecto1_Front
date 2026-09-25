@@ -11,7 +11,6 @@ type Props = {
     setValoresFiltros: any; 
     marcas: any[]; 
     lineas: any[]; 
-    sublineas: any[]; 
     productosLength: number; 
     onBuscar: () => void; 
     onAplicarCambios: (porcentaje: number) => void; 
@@ -26,14 +25,13 @@ export default function FiltrosCambioPrecios({
   setValoresFiltros,
   marcas,
   lineas,
-  sublineas,
   productosLength,
   onBuscar,
   onAplicarCambios,
   onGuardarCambios,
   fetchMarcas,
   fetchLineas,
-  onLimpiarFiltros
+  onLimpiarFiltros,
 }: Props) {
   const [porcentaje, setPorcentaje] = useState<number>(0);
   return (
@@ -166,44 +164,7 @@ export default function FiltrosCambioPrecios({
                     </div>
                   </div>
 
-                  <div className="space-y-3 mt-14">
-                    <div>
-                      <Select
-                        value={(sublineas ?? []).find((option) => option.id === valoresFiltros.sublineaId) || null}
-                        options={sublineas ?? []}
-                        getOptionLabel={(option) => option.denominacion}
-                        getOptionValue={(option) => String(option.id)}
-                        onChange={(option) =>
-                          setValoresFiltros({
-                            ...valoresFiltros,
-                            sublineaId: option ? option.id : undefined,
-                          })
-                        }
-                        placeholder="Seleccione una sublínea"
-                        className="text-black"
-                        menuPortalTarget={document.body}
-                        styles={{
-                          control: (base) => ({
-                            ...base,
-                            color: "black",
-                          }),
-                          singleValue: (base) => ({
-                            ...base,
-                            color: "black",
-                          }),
-                          option: (base, { isSelected, isFocused }) => ({
-                            ...base,
-                            color: isSelected ? "white" : "black",
-                            backgroundColor: isSelected ? "#3b82f6" : isFocused ? "#93c5fd" : "white",
-                          }),
-                          menuPortal: (base) => ({
-                            ...base,
-                            zIndex: 9999,
-                          }),
-                        }}
-                      />
-                    </div>
-                  </div>
+
 
                   {/* <Button
                     variant="outline"

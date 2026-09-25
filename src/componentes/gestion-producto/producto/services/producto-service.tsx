@@ -4,6 +4,10 @@ import axiosConfig from "../../../../utils/axiosConfig";
 import { createCrudService } from "../../../../utils/crudFactory";
 import { FormValues } from "../interfaces/interfaces-validaciones-item-prod-alternativo";
 import ApiService from "../../../../utils/apiService";
+import {
+  AjustePreciosMasivoPayload,
+  AjustePreciosMasivoResponse,
+} from "../../../../interfaces/gestion-producto/precios/interfaces-precios";
 
 
 const apiUrl = axiosConfig.apiUrl;
@@ -124,6 +128,26 @@ const ProductoService = {
       { headers },
     );
     return data;
+  },
+
+  // CR-006: Actualización masiva de precios
+  actualizarPreciosMasivo: async (
+    payload: AjustePreciosMasivoPayload,
+  ): Promise<AjustePreciosMasivoResponse> => {
+    try {
+      const token = localStorage.getItem("Token");
+      const headers = token ? { Authorization: `Bearer ${token}` } : {};
+
+      const { data } = await axios.put(
+        `${apiUrl}/producto/precios/masivo`,
+        payload,
+        { headers },
+      );
+
+      return data;
+    } catch (error) {
+      throw error;
+    }
   },
 };
 

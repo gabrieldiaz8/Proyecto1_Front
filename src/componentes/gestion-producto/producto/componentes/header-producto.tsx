@@ -1,4 +1,4 @@
-import { Package, PlusCircle, Search } from "lucide-react";
+import { Package, PlusCircle, Search, TrendingUp } from "lucide-react";
 import { Button } from "../../../ui/Button";
 import { CardHeader, CardTitle } from "../../../ui/Card";
 import { Input } from "../../../ui/Input";
@@ -19,6 +19,7 @@ interface Props {
   paginaActual: number;
   onImprimirTodo: () => void;
   onImprimirPagina: () => void;
+  onAbrirAjusteMasivo: () => void;
 }
 
 export function ProductosHeader({
@@ -34,6 +35,7 @@ export function ProductosHeader({
   paginaActual,
   onImprimirTodo,
   onImprimirPagina,
+  onAbrirAjusteMasivo,
 }: Props) {
   return (
     <CardHeader className="flex flex-col md:flex-row gap-4 p-4">
@@ -77,6 +79,14 @@ export function ProductosHeader({
           totalItems={total}
           currentPage={paginaActual}
         />
+        {/* CR-006: modal de ajuste masivo de precios */}
+        <Button
+          onClick={onAbrirAjusteMasivo}
+          className="bg-emerald-600 hover:bg-emerald-700 text-white"
+        >
+          <TrendingUp className="mr-2 h-4 w-4" />
+          Ajuste Masivo
+        </Button>
         {puedeAgregarProducto(roles) && (
            <Button onClick={onNuevo} className="bg-blue-500 hover:bg-blue-700 text-white">
           <PlusCircle className="mr-2 h-4 w-4" />

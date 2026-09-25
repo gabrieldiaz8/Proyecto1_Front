@@ -32,7 +32,11 @@ import { NotificacionModal } from "../../../NotificacionModal/modales/Notificaci
 import { ProductoNotificacion, EntidadTipo } from "../../../NotificacionModal/interfaces/notificacion.types";
 import { getRoles, getUsuarioId } from "../../../../utils/auth";
 import { puedeHacerAcciones } from "../domain/permisos-producto";
-
+// CR-006: Ajuste masivo de precios
+import { useConfirmarAjusteMasivo } from "../../precios/cambio-precios-masivo/hooks/useConfirmarAjusteMasivo";
+import AjustePreciosMasivoForm from "../../precios/cambio-precios-masivo/componentes/ajuste-precios-masivo-form";
+import AjustePreciosResultadoModal from "../../precios/cambio-precios-masivo/componentes/ajuste-precios-resultado-modal";
+import { AjustePreciosMasivoResponse } from "../../../../interfaces/gestion-producto/precios/interfaces-precios";
 
 export default function ConsultarProductos() {
   const [productos, setProductos] = useState<ConsultarProducto[]>([]);
@@ -50,6 +54,12 @@ export default function ConsultarProductos() {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [modalAbierto, setModalAbierto] = useState<boolean>(false);
   const [productoNotificacionSeleccionado, setProductoNotificacionSeleccionado] = useState<ProductoNotificacion | null>(null);
+  // CR-006: estado de visibilidad del modal de ajuste masivo
+  const [mostrarAjusteMasivo, setMostrarAjusteMasivo] = useState(false);
+  // CR-006: resultado de la operación masiva — null = modal cerrado
+  const [resultadoAjuste, setResultadoAjuste] =
+    useState<AjustePreciosMasivoResponse | null>(null);
+
   const usuarioId = getUsuarioId();
   const { configuracion } = useConfiguracionSistema();
   const [codigo, setCodigo] = useState<string>("");
@@ -136,6 +146,9 @@ export default function ConsultarProductos() {
   // =========================
   const { alerts, addAlert, removeAlert } = useAlerts();
   const { showConfirmation, AlertasConfirmacion } = useConfirmation();
+  // CR-006: hook de confirmación previa al ajuste masivo
+  const { confirmarAjuste, AlertasConfirmacion: AlertasConfirmacionAjuste } =
+    useConfirmarAjusteMasivo();
   
   // =========================
     // IMPRESIÓN
@@ -525,6 +538,7 @@ export default function ConsultarProductos() {
                 paginaActual={paginaActual}
                 onImprimirTodo={handleImprimirTodo}
                 onImprimirPagina={handleImprimirPagina}
+                onAbrirAjusteMasivo={() => setMostrarAjusteMasivo(true)}
               />
               </div>
 
@@ -592,6 +606,8 @@ export default function ConsultarProductos() {
             </div>
             <Alertas alerts={alerts} onRemove={removeAlert} />
             <AlertasConfirmacion />
+            {/* CR-006: diálogo de confirmación del ajuste masivo */}
+            <AlertasConfirmacionAjuste />
           </>
         )}
       </div>
@@ -638,6 +654,42 @@ export default function ConsultarProductos() {
       )}
       {/* =========================================== */}
 
+      {/* CR-006: modal de formulario de ajuste masivo */}
+      {mostrarAjusteMasivo && (
+        <AjustePreciosMasivoForm
+          onClose={() => setMostrarAjusteMasivo(false)}
+          onSubmitValues={(payload) =>
+            confirmarAjuste(payload, async (payloadConfirmado) => {
+              setMostrarAjusteMasivo(false);
+              try {
+                const response =
+                  await ProductoService.actualizarPreciosMasivo(
+                    payloadConfirmado,
+                  );
+                setResultadoAjuste(response);
+              } catch {
+                addAlert({
+                  type: TipoAlerta.ERROR,
+                  title: TituloAlerta.ERROR,
+                  message:
+                    "Ocurrió un error al intentar procesar el ajuste masivo.",
+                  autoClose: true,
+                  duration: 5000,
+                });
+              }
+            })
+          }
+        />
+      )}
+
+      {/* CR-006: modal de resumen de resultados */}
+      <AjustePreciosResultadoModal
+        resultado={resultadoAjuste}
+        onClose={() => {
+          setResultadoAjuste(null);
+          handleBuscarProductos();
+        }}
+      />
 
     </div>
   );

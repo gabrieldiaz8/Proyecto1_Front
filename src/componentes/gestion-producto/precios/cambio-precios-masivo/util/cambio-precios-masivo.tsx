@@ -1,6 +1,11 @@
 import { useState, useEffect, useMemo, useCallback } from "react";
 import { Card, CardContent } from "../../../../ui/Card";
-import { Alertas, TipoAlerta, TituloAlerta, useAlerts } from "../../../../herramientas/alertas/alertas";
+import {
+  Alertas,
+  TipoAlerta,
+  TituloAlerta,
+  useAlerts,
+} from "../../../../herramientas/alertas/alertas";
 import {
   TipoAlertaConfirmacion,
   TituloAlertaConfirmacion,
@@ -18,14 +23,14 @@ import { getUsuarioId } from "../../../../../utils/auth";
 import { useCambioPrecios } from "../hooks/useCambioPrecios";
 import TablaCambioPrecios from "../componentes/tabla-cambio-precios";
 import FiltrosCambioPrecios from "../componentes/filtros-cambio-precios";
-
 export default function CambioPreciosMasivo() {
   const [error, setError] = useState<string | null>(null);
-  const [mostrarActualizarProducto, setMostrarActualizarProducto] = useState(false);
-  const [productoSeleccionado, setProductoSeleccionado] = useState<ConsultarProductosCambioPreciosMasivo>(
-    {} as ConsultarProductosCambioPreciosMasivo
-  );
-
+  const [mostrarActualizarProducto, setMostrarActualizarProducto] =
+    useState(false);
+  const [productoSeleccionado, setProductoSeleccionado] =
+    useState<ConsultarProductosCambioPreciosMasivo>(
+      {} as ConsultarProductosCambioPreciosMasivo,
+    );
   const usuarioId = getUsuarioId();
   const { configuracion } = useConfiguracionSistema();
   const { alerts, addAlert, removeAlert } = useAlerts();
@@ -51,12 +56,13 @@ export default function CambioPreciosMasivo() {
     actualizarProductoLocal,
   } = useCambioPrecios(usuarioId);
 
-  const { marcas, lineas, sublineas, setLineas, setMarcas, setSublineas } = useCatalogosContext();
+  const { marcas, lineas, setLineas, setMarcas } =
+    useCatalogosContext();
 
   useEffect(() => {
     limpiarFiltros();
     setBuscar({ cont: 0, componente: "cambio-precios-masivo" });
-    setFiltrosNecesarios({ marca: true, linea: true, sublinea: true });
+    setFiltrosNecesarios({ marca: true, linea: true });
   }, []);
 
   const fetchMarcas = useCallback(async () => {
@@ -69,7 +75,7 @@ export default function CambioPreciosMasivo() {
       ) {
         const marcasTotales = await CambioPreciosMasivoService.obtenerTotales(
           { denominacion: valoresFiltros.denominacionMarca || " " },
-          "marcas"
+          "marcas",
         );
         setMarcas(marcasTotales.data);
       }
@@ -92,7 +98,7 @@ export default function CambioPreciosMasivo() {
       ) {
         const lineasTotales = await CambioPreciosMasivoService.obtenerTotales(
           { denominacion: valoresFiltros.denominacionLinea || " " },
-          "lineas"
+          "lineas",
         );
         setLineas(lineasTotales.data);
       }
@@ -105,30 +111,14 @@ export default function CambioPreciosMasivo() {
     fetchLineas();
   }, [buscarLineas]);
 
-  useEffect(() => {
-    const fetchSublineas = async () => {
-      setError(null);
-      try {
-        if (valoresFiltros.lineaId && valoresFiltros.lineaId !== 0) {
-          const sublineasTotales = await CambioPreciosMasivoService.obtenerTotalesPara(
-            valoresFiltros.lineaId || 0,
-            "sublineas"
-          );
-          setSublineas(sublineasTotales.data);
-        }
-      } catch {
-        setError("No se pudieron cargar las sublíneas.");
-      }
-    };
-    fetchSublineas();
-  }, [valoresFiltros.lineaId]);
+
 
   const handleAbrirActualizarProducto = useCallback(
     (producto: ConsultarProductosCambioPreciosMasivo) => {
       setProductoSeleccionado(producto);
       setMostrarActualizarProducto(true);
     },
-    []
+    [],
   );
 
   const handleCerrarActualizarProducto = useCallback(() => {
@@ -141,7 +131,8 @@ export default function CambioPreciosMasivo() {
       const confirmed = await showConfirmation({
         type: TipoAlertaConfirmacion.DESTRUCTIVE,
         title: TituloAlertaConfirmacion.DESTRUCTIVE,
-        message: "¿Estás seguro de que quieres eliminar este elemento? Esta acción no se puede deshacer.",
+        message:
+          "¿Estás seguro de que quieres eliminar este elemento? Esta acción no se puede deshacer.",
         confirmText: "Eliminar",
         cancelText: "Cancelar",
         onConfirm: () => {},
@@ -167,7 +158,7 @@ export default function CambioPreciosMasivo() {
         });
       }
     },
-    [showConfirmation, setProductos, addAlert]
+    [showConfirmation, setProductos, addAlert],
   );
 
   const handleLimpiarFiltros = useCallback(() => {
@@ -176,13 +167,11 @@ export default function CambioPreciosMasivo() {
       denominacionLinea: "",
       marcaId: undefined,
       lineaId: undefined,
-      sublineaId: undefined,
     });
-    setSublineas([]);
     setLineas([]);
     setMarcas([]);
     setProductos([]);
-  }, [setValoresFiltros, setSublineas, setLineas, setMarcas, setProductos]);
+  }, [setValoresFiltros, setLineas, setMarcas, setProductos]);
 
   const handleActualizarSuccess = useCallback(
     (productoActualizado: ConsultarProductosCambioPreciosMasivo) => {
@@ -196,7 +185,7 @@ export default function CambioPreciosMasivo() {
       actualizarProductoLocal(productoActualizado);
       setMostrarActualizarProducto(false);
     },
-    [addAlert, actualizarProductoLocal]
+    [addAlert, actualizarProductoLocal],
   );
 
   const handleGuardarCambios = useCallback(async () => {
@@ -241,7 +230,9 @@ export default function CambioPreciosMasivo() {
               <span>{value}</span>
             </div>
             {row.observacion && (
-              <div className="text-sm text-gray-500 truncate max-w-[700px]">{row.observacion}</div>
+              <div className="text-sm text-gray-500 truncate max-w-[700px]">
+                {row.observacion}
+              </div>
             )}
           </div>
         ),
@@ -319,7 +310,7 @@ export default function CambioPreciosMasivo() {
         formatFunction: ({ value }) => <span>{formatPrice(value, "ARS")}</span>,
       },
     ],
-    []
+    [],
   );
 
   return (
@@ -328,12 +319,16 @@ export default function CambioPreciosMasivo() {
         {loading ? (
           <div className="flex flex-col items-center justify-center py-12">
             <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-500 mb-4"></div>
-            <p className="text-gray-600 dark:text-gray-400 text-lg">Cargando productos...</p>
+            <p className="text-gray-600 dark:text-gray-400 text-lg">
+              Cargando productos...
+            </p>
           </div>
         ) : error ? (
           <div className="flex flex-col items-center justify-center py-12">
             <div className="bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-lg p-6 max-w-md">
-              <p className="text-red-600 dark:text-red-400 text-center font-medium">{error}</p>
+              <p className="text-red-600 dark:text-red-400 text-center font-medium">
+                {error}
+              </p>
             </div>
           </div>
         ) : (
@@ -344,13 +339,11 @@ export default function CambioPreciosMasivo() {
                 setValoresFiltros={setValoresFiltros}
                 marcas={marcas}
                 lineas={lineas}
-                sublineas={sublineas}
                 productosLength={productos.length}
                 onBuscar={() =>
                   buscarProductos({
                     marcaId: valoresFiltros.marcaId,
                     lineaId: valoresFiltros.lineaId,
-                    subLineaId: valoresFiltros.sublineaId,
                   })
                 }
                 onAplicarCambios={aplicarCambios}
