@@ -8,6 +8,7 @@ export interface FormValues {
   observacion?: string | null;
   stockMinimo?: number;
   utilizaStockMinimo?: boolean;
+  superLineaId: number;
 }
 
 export interface SublineasEnPayload {
@@ -34,7 +35,7 @@ export const schema = (utilizaStockMinimo: boolean) =>
       otherwise: (schema) => schema.optional(),
     }),
     utilizaStockMinimo: yup.boolean().optional(),
-   
+    superLineaId: yup.number().required("Debe seleccionar una SuperLínea").min(1, "Debe seleccionar una SuperLínea"),
   });
 
 //===================== transform data ============================================//
@@ -45,6 +46,6 @@ export const transformData = (linea: Linea): FormValues => {
     observacion: linea.observacion ?? null,
     stockMinimo: linea.stockMinimo ?? 0,
     utilizaStockMinimo: linea.utilizaStockMinimo ?? false,
+    superLineaId: linea.superLineaId ?? 0,
   };
 };
-
