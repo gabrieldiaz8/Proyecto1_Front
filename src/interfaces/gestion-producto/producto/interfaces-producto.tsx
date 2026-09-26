@@ -3,6 +3,7 @@ import { SelectMarca } from "../marca/interfaces-marca";
 import { SelectSublinea } from "../sublinea/interfaces-sublinea";
 import { ItemProdAlternativo } from "./interfaces-item-prod-alternativo";
 import { ItemProveedor } from "./interfaces-item-proveedor";
+import { UnidadMedida } from "../presentacion/interfaces-presentacion";
 
 export interface Producto {
   //
@@ -45,9 +46,12 @@ export interface Producto {
   precioMayoristaConIva: number;
   precioClienteConIva: number;
   precioOfertaConIva: number;
-  presentacion: SelectPresentacion;
   itemsProveedor?: ItemProveedor[] | null;
  */
+  // CR-002: Presentación. El backend la expone plana, no como objeto anidado
+  // (ver ProductoMapper.toDto / toBusquedaDto y ProductoDto.presentacionCantidad).
+  presentacionCantidad?: number | null;
+  presentacionUnidadMedida?: UnidadMedida | null;
   stockMinimo: number;
   cantidadPorPack: number;
   utilizaStockMinimo: boolean;
@@ -84,6 +88,9 @@ export interface ConsultarProducto {
   precioMayoristaConIva: number;
   precioClienteConIva: number;
   precioOfertaConIva: number;
+  // CR-002: campos planos devueltos por GET /producto/search-by (GetProductoDto).
+  presentacionCantidad?: number | null;
+  presentacionUnidadMedida?: UnidadMedida | null;
 }
 
 

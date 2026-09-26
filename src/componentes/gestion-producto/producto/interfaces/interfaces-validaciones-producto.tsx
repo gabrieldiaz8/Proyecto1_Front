@@ -4,6 +4,11 @@ import { AlicuotaIva } from "../../../../interfaces/generales/interfaces-general
 import { Producto } from "../../../../interfaces/gestion-producto/producto/interfaces-producto";
 import { ItemProveedor } from "../../../../interfaces/gestion-producto/producto/interfaces-item-proveedor";
 import { ItemProdAlternativo } from "../../../../interfaces/gestion-producto/producto/interfaces-item-prod-alternativo";
+import {
+  UnidadMedida,
+  PresentacionPayload,
+  esUnidadMedidaValida,
+} from "../../../../interfaces/gestion-producto/presentacion/interfaces-presentacion";
 
 //===================== interfaces para las cosas que se van a ingresar en el formulario y es necesario validarlas ==========//
 
@@ -24,8 +29,10 @@ export interface FormValues {
   marcaId: number;
   /* subLineaId?: number | null */
   alicuotaIva: number | null;
-  /* ubicacion?: string | null;
-  presentacionId: number; */
+  /* ubicacion?: string | null; */
+  // CR-002: Presentación del producto (Value Object: cantidad + unidad).
+  presentacionCantidad?: number | null;
+  presentacionUnidadMedida?: UnidadMedida | null;
   stockMinimo?: number;
   cantidadPorPack?: number;
   utilizaStockMinimo?: boolean;
@@ -102,12 +109,24 @@ export const schema = (utilizaStockMinimo: boolean, utilizaPack: boolean, usaOfe
       .oneOf(Object.values(AlicuotaIva), "Alicuota IVA inválida")
       .required("La alícuota IVA es obligatoria.")
       .nullable(),
-    /* ubicacion: yup.string().optional().max(255, "Máximo 255 caracteres.").nullable(),
-    presentacionId: yup
+    /* ubicacion: yup.string().optional().max(255, "Máximo 255 caracteres.").nullable(), */
+    // CR-002: todo producto debe tener una presentación válida (cantidad > 0 y unidad reconocida).
+    presentacionCantidad: yup
       .number()
-      .typeError("La unidad de medida es obligatoria.")
-      .required("La unidad de medida es obligatoria."),
-    subLineaId: yup
+      .typeError("La cantidad de la presentación debe ser un valor numérico.")
+      .transform((value, originalValue) => (originalValue === "" ? null : value))
+      .required("La cantidad de la presentación es obligatoria.")
+      .moreThan(0, "La cantidad de la presentación debe ser un número mayor a 0.")
+      .nullable(),
+    presentacionUnidadMedida: yup
+      .string()
+      .required("La unidad de medida de la presentación es obligatoria.")
+      .oneOf(
+        Object.values(UnidadMedida) as string[],
+        "La unidad de medida debe ser una de: KG, G, L, ML, UN, CC, LT, MG."
+      )
+      .nullable(),
+    /* subLineaId: yup
     .number()
     .typeError("La sublinea es obligatoria.")
     .optional()
@@ -188,6 +207,8 @@ export const transformData = (producto: Producto): FormValues => {
    /*  subLineaId: producto.sublinea?.id ?? 0,
     presentacionId: producto.presentacion.id ?? 0,
  */
+    presentacionCantidad: producto.presentacionCantidad ?? null,
+    presentacionUnidadMedida: producto.presentacionUnidadMedida ?? null,
     stockMinimo: producto.stockMinimo ?? null,
     cantidadPorPack: producto.cantidadPorPack ?? null,
     utilizaStockMinimo: producto.utilizaStockMinimo,
@@ -203,6 +224,18 @@ export const transformData = (producto: Producto): FormValues => {
      */
   };
 };
+
+/**
+ * Mapea el Value Object Presentación a los campos planos que espera el backend
+ * (CreateProductoDto / UpdateProductoDto: presentacionCantidad + presentacionUnidadMedida).
+ */
+export const transformPresentacion = (
+  presentacionCantidad: number | null | undefined,
+  presentacionUnidadMedida: string | null | undefined
+): PresentacionPayload => ({
+  presentacionCantidad: presentacionCantidad ?? null,
+  presentacionUnidadMedida: esUnidadMedidaValida(presentacionUnidadMedida) ? presentacionUnidadMedida : null,
+});
 
 export const transformarItemsProveedor = (items: ItemProveedor[]): ItemsProveedorEnPayload[] => {
   return items.map((item) => ({

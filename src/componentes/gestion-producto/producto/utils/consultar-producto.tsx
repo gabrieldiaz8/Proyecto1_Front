@@ -5,6 +5,10 @@ import ProductoService from "../services/producto-service";
 import { formatCantidades, formatPrice } from "../../../herramientas/formateo-de-campos/fucion-formateo";
 import { ConsultarProducto, Producto } from "../../../../interfaces/gestion-producto/producto/interfaces-producto";
 import { TablaAGGrid, Column } from "../../../herramientas/tablas/tabla-flexible-ag-grid";
+import {
+  crearPresentacion,
+  formatearPresentacion,
+} from "../../../../interfaces/gestion-producto/presentacion/interfaces-presentacion";
 import { jwtDecode } from "jwt-decode";
 import Paginacion from "../../../herramientas/reutilizables/paginacion";
 import { Card, CardContent } from "../../../ui/Card";
@@ -498,6 +502,26 @@ export default function ConsultarProductos() {
         </div>
       ),
       scrollable: false,
+    },
+    {
+      // CR-002: Presentación del producto, junto al nombre.
+      header: "Presentación",
+      accessor: "presentacionCantidad",
+      flex: 0.4,
+      type: "text",
+      editable: false,
+      scrollable: false,
+      formatFunction: ({ row }) => {
+        const presentacion = crearPresentacion(
+          row.presentacionCantidad,
+          row.presentacionUnidadMedida
+        );
+        return (
+          <span className="text-gray-700">
+            {presentacion ? formatearPresentacion(presentacion) : "—"}
+          </span>
+        );
+      },
     },
     {
       header: "Precio",

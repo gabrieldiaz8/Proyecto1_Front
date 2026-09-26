@@ -9,7 +9,11 @@ import { Card } from "../../../ui/Card";
 import ProductoService from "../services/producto-service";
 import PriceInput from "../../../herramientas/formateo-de-campos/price-input";
 import CantidadesInput from "../../../herramientas/formateo-de-campos/cantidades-input";
-import { Producto, SelectPresentacion } from "../../../../interfaces/gestion-producto/producto/interfaces-producto";
+import { Producto } from "../../../../interfaces/gestion-producto/producto/interfaces-producto";
+import {
+  UNIDADES_MEDIDA,
+  UnidadMedida,
+} from "../../../../interfaces/gestion-producto/presentacion/interfaces-presentacion";
 import { SelectMarca } from "../../../../interfaces/gestion-producto/marca/interfaces-marca";
 import { Linea, SelectLinea } from "../../../../interfaces/gestion-producto/linea/interfaces-linea";
 import { AlicuotaIva, ResponsePost } from "../../../../interfaces/generales/interfaces-generales";
@@ -22,7 +26,13 @@ import RegistrarActualizarMarcaForm from "../../marca/utils/registrar-actualizar
 import { ItemProveedor } from "../../../../interfaces/gestion-producto/producto/interfaces-item-proveedor";
 import { SelectSublinea } from "../../../../interfaces/gestion-producto/sublinea/interfaces-sublinea";
 import { ItemsProveedorEnPayload } from "../interfaces/interfaces-validaciones-item-proveedor";
-import { FormValues, schema, transformData, transformarItemsProdAlternativo } from "../interfaces/interfaces-validaciones-producto";
+import {
+  FormValues,
+  schema,
+  transformData,
+  transformPresentacion,
+  transformarItemsProdAlternativo,
+} from "../interfaces/interfaces-validaciones-producto";
 import LineasSelector from "../componentes/configuracion/lineas-selector";
 import EncabezadoFormularios from "../../../ui/encabezadoFormularios";
 import MarcasSelector from "../componentes/configuracion/marcas-selector";
@@ -57,6 +67,9 @@ export default function RegistrarActualizarProductoForm({
       ? transformData(producto)
       : {
           alicuotaIva: AlicuotaIva.ALICUOTA_21,
+          // CR-002: la presentación es obligatoria; precargamos la cantidad mínima razonable.
+          presentacionCantidad: 1,
+          presentacionUnidadMedida: null,
         },
   });
 
@@ -90,6 +103,8 @@ export default function RegistrarActualizarProductoForm({
   const cantidadPorPack = watch("cantidadPorPack");
   const utilizaStockMinimo = watch("utilizaStockMinimo");
   const utilizaPack = watch("utilizaPack");
+  const presentacionCantidad = watch("presentacionCantidad");
+  const presentacionUnidadMedida = watch("presentacionUnidadMedida");
   const costo = watch("costo");
   const porcentaje = watch("porcentaje");
   
@@ -157,6 +172,10 @@ export default function RegistrarActualizarProductoForm({
           setValue("codigoBarra", producto.codigoBarra || null);
           setValue("stock", producto.stock || 0);
           setValue("costo", producto.costo || 0);
+
+          // CR-002: Presentación del producto
+          setValue("presentacionCantidad", producto.presentacionCantidad ?? null);
+          setValue("presentacionUnidadMedida", producto.presentacionUnidadMedida ?? null);
           
           //setValue("oferta", producto.oferta || false);
           setValue("alicuotaIva", producto.alicuotaIva || 0);
@@ -199,6 +218,7 @@ export default function RegistrarActualizarProductoForm({
       if (producto) {
         const payload = {
           ...formData,
+          ...transformPresentacion(formData.presentacionCantidad, formData.presentacionUnidadMedida),
           usuarioUpdatedId: usuarioId,
         };
 
@@ -206,6 +226,7 @@ export default function RegistrarActualizarProductoForm({
       } else {
         const payload = {
           ...formData,
+          ...transformPresentacion(formData.presentacionCantidad, formData.presentacionUnidadMedida),
           usuarioCreatedId: usuarioId,
         };
 
@@ -351,6 +372,75 @@ export default function RegistrarActualizarProductoForm({
                     inputRef={codigoBarraRef}
                     onKeyDown={(e) => handleEnterEnSelect(e, "ALICUOTA-IVA")}
                   />
+
+                  {/* CR-002: Presentación del producto (Value Object cantidad + unidad de medida) */}
+                  <div className="col-span-full">
+                    <p className="text-sm font-semibold text-gray-700 border-b border-gray-200 pb-1">
+                      Presentación
+                    </p>
+                    <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mt-3">
+                      <CantidadesInput
+                        name="presentacionCantidad"
+                        label="Cantidad"
+                        value={presentacionCantidad ?? 0}
+                        onChange={(value) =>
+                          setValue("presentacionCantidad", value, { shouldValidate: true })
+                        }
+                        maxDigits={7}
+                        decimalScale={3}
+                        className="!max-w-full"
+                        disabled={producto && producto.sistema > 0 ? true : false}
+                      />
+
+                      <div>
+                        <label className="mb-2 block text-sm font-medium text-gray-700">
+                          Unidad de medida
+                        </label>
+                        <div className="w-full">
+                          <Select
+                            value={
+                              UNIDADES_MEDIDA.find(
+                                (u) => u.value === (presentacionUnidadMedida as string)
+                              ) || null
+                            }
+                            options={UNIDADES_MEDIDA}
+                            getOptionLabel={(option) => option.label}
+                            getOptionValue={(option) => option.value}
+                            placeholder="Selecciona la unidad"
+                            isDisabled={producto && producto.sistema > 0 ? true : false}
+                            onChange={(selectedOption) => {
+                              setValue(
+                                "presentacionUnidadMedida",
+                                (selectedOption?.value ?? null) as UnidadMedida | null,
+                                { shouldValidate: true }
+                              );
+                            }}
+                            className="text-black"
+                            menuPortalTarget={document.body}
+                            styles={{
+                              control: (base) => ({ ...base, color: "black" }),
+                              singleValue: (base) => ({ ...base, color: "black" }),
+                              option: (base, { isSelected, isFocused }) => ({
+                                ...base,
+                                color: isSelected ? "white" : "black",
+                                backgroundColor: isSelected
+                                  ? "#3b82f6"
+                                  : isFocused
+                                  ? "#93c5fd"
+                                  : "white",
+                              }),
+                              menuPortal: (base) => ({ ...base, zIndex: 9999 }),
+                            }}
+                          />
+                        </div>
+                        {errors.presentacionUnidadMedida && (
+                          <small className="text-red-500">
+                            {errors.presentacionUnidadMedida?.message as string}
+                          </small>
+                        )}
+                      </div>
+                    </div>
+                  </div>
 
                   {/* <FormInput
                     name="costo"
