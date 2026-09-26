@@ -21,6 +21,7 @@ import { schema, FormValues } from "./interfaces-validaciones-producto";
 import RegistrarActualizarProductoForm from "../utils/registrar-actualizar-producto";
 import { AlicuotaIva } from "../../../../interfaces/generales/interfaces-generales";
 import { ConfiguracionSistemaProvider } from "../../../sistema/ConfiguracionSistemaContext";
+import { UnidadMedida } from "../../../../interfaces/gestion-producto/presentacion/interfaces-presentacion";
 
 // ─── base de pruebas ─────────────────────────────────────────────────────────
 
@@ -35,6 +36,9 @@ const valoresValidos = {
   marcaId: 1,
   lineaId: 1,
   alicuotaIva: AlicuotaIva.ALICUOTA_21,
+  // CR-002: la presentacion es obligatoria en toda alta/actualizacion.
+  presentacionCantidad: 1,
+  presentacionUnidadMedida: UnidadMedida.UN,
 };
 
 // ─── helpers ────────────────────────────────────────────────────────────────

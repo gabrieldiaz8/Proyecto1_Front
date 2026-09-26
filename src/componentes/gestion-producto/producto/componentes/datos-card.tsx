@@ -1,6 +1,10 @@
 import { Bell } from "lucide-react";
 import type { ConsultarProducto } from "../../../../interfaces/gestion-producto/producto/interfaces-producto";
 import { formatPrice } from "../../../herramientas/formateo-de-campos/fucion-formateo";
+import {
+  crearPresentacion,
+  formatearPresentacion,
+} from "../../../../interfaces/gestion-producto/presentacion/interfaces-presentacion";
 import { ActionButton } from "../../../herramientas/reutilizables/action-button";
 import { ProductoActions } from "./producto-action";
 
@@ -27,13 +31,20 @@ export function DatosCard({
   onHistorial,
   onNotificar,
 }: Props) {
+  const presentacion = formatearPresentacion(
+    crearPresentacion(producto.presentacionCantidad, producto.presentacionUnidadMedida)
+  );
+
   return (
     <div className="border border-gray-200 rounded-md bg-white px-3 py-3">
-      {/* Denominación */}
+      {/* Denominación + Presentación (CR-002) */}
       <div className="mb-2">
         <p className="text-xs text-gray-500">Denominación</p>
         <p className="text-sm font-medium text-gray-800 line-clamp-2">
           {producto.denominacion}
+          {presentacion && (
+            <span className="font-normal text-gray-500"> — {presentacion}</span>
+          )}
         </p>
       </div>
 
