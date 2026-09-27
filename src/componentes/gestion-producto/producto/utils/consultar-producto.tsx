@@ -5,6 +5,10 @@ import ProductoService from "../services/producto-service";
 import { formatCantidades, formatPrice } from "../../../herramientas/formateo-de-campos/fucion-formateo";
 import { ConsultarProducto, Producto } from "../../../../interfaces/gestion-producto/producto/interfaces-producto";
 import { TablaAGGrid, Column } from "../../../herramientas/tablas/tabla-flexible-ag-grid";
+import {
+  crearPresentacion,
+  formatearPresentacion,
+} from "../../../../interfaces/gestion-producto/presentacion/interfaces-presentacion";
 import { jwtDecode } from "jwt-decode";
 import Paginacion from "../../../herramientas/reutilizables/paginacion";
 import { Card, CardContent } from "../../../ui/Card";
@@ -32,7 +36,11 @@ import { NotificacionModal } from "../../../NotificacionModal/modales/Notificaci
 import { ProductoNotificacion, EntidadTipo } from "../../../NotificacionModal/interfaces/notificacion.types";
 import { getRoles, getUsuarioId } from "../../../../utils/auth";
 import { puedeHacerAcciones } from "../domain/permisos-producto";
-
+// CR-006: Ajuste masivo de precios
+import { useConfirmarAjusteMasivo } from "../../precios/cambio-precios-masivo/hooks/useConfirmarAjusteMasivo";
+import AjustePreciosMasivoForm from "../../precios/cambio-precios-masivo/componentes/ajuste-precios-masivo-form";
+import AjustePreciosResultadoModal from "../../precios/cambio-precios-masivo/componentes/ajuste-precios-resultado-modal";
+import { AjustePreciosMasivoResponse } from "../../../../interfaces/gestion-producto/precios/interfaces-precios";
 
 export default function ConsultarProductos() {
   const [productos, setProductos] = useState<ConsultarProducto[]>([]);
@@ -50,6 +58,12 @@ export default function ConsultarProductos() {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [modalAbierto, setModalAbierto] = useState<boolean>(false);
   const [productoNotificacionSeleccionado, setProductoNotificacionSeleccionado] = useState<ProductoNotificacion | null>(null);
+  // CR-006: estado de visibilidad del modal de ajuste masivo
+  const [mostrarAjusteMasivo, setMostrarAjusteMasivo] = useState(false);
+  // CR-006: resultado de la operación masiva — null = modal cerrado
+  const [resultadoAjuste, setResultadoAjuste] =
+    useState<AjustePreciosMasivoResponse | null>(null);
+
   const usuarioId = getUsuarioId();
   const { configuracion } = useConfiguracionSistema();
   const [codigo, setCodigo] = useState<string>("");
@@ -58,21 +72,21 @@ export default function ConsultarProductos() {
   const isMounted = useRef(false);
   const inicializacionCompleta = useRef(false);
 
-  
-   // =========================
-    // PAGINACIÓN
-    // =========================
-    const {
-      paginaActual,
-      entidadesTotales,
-      skip,
-      take,
-      setEntidadesTotales,
-      handlePageChange,
-      resetearPaginacion,
-    } = usePaginacion(PAGINACION.TAKE_DEFAULT);
 
-    // MANEJO DE FILTROS ========================================================
+  // =========================
+  // PAGINACIÓN
+  // =========================
+  const {
+    paginaActual,
+    entidadesTotales,
+    skip,
+    take,
+    setEntidadesTotales,
+    handlePageChange,
+    resetearPaginacion,
+  } = usePaginacion(PAGINACION.TAKE_DEFAULT);
+
+  // MANEJO DE FILTROS ========================================================
   const [filtrosInicializados, setFiltrosInicializados] = useState(false);
   const {
     setFiltrosNecesarios,
@@ -87,13 +101,13 @@ export default function ConsultarProductos() {
 
   const filtrosInicialesConsultarProducto = useFiltrosIniciales("consultar-producto");
 
-    // Contexto de catálogos
+  // Contexto de catálogos
   const {
     setLineas,
     setMarcas,
     setProveedores,
   } = useCatalogosContext();
-  
+
   // Setear qué filtros mostrar en la sidebar
   useEffect(() => {
     limpiarFiltros();
@@ -102,6 +116,8 @@ export default function ConsultarProductos() {
       denominacion: true,
       codigoProveedor: true,
       linea: true,
+      lineaDenominacion: true,
+      superLineaDenominacion: true,
       marca: true,
       proveedor: true,
       conStock: true,
@@ -131,19 +147,22 @@ export default function ConsultarProductos() {
 
 
 
-    // =========================
+  // =========================
   // ALERTAS / CONFIRMACIONES
   // =========================
   const { alerts, addAlert, removeAlert } = useAlerts();
   const { showConfirmation, AlertasConfirmacion } = useConfirmation();
-  
+  // CR-006: hook de confirmación previa al ajuste masivo
+  const { confirmarAjuste, AlertasConfirmacion: AlertasConfirmacionAjuste } =
+    useConfirmarAjusteMasivo();
+
   // =========================
-    // IMPRESIÓN
-    // =========================
-    const {
-      handleImprimirTodo,
-      handleImprimirPagina,
-    } = useProductoImpresion();
+  // IMPRESIÓN
+  // =========================
+  const {
+    handleImprimirTodo,
+    handleImprimirPagina,
+  } = useProductoImpresion();
 
   const fetchLineas = async () => {
     setError(null);
@@ -233,7 +252,7 @@ export default function ConsultarProductos() {
       message: "¿Estás seguro de que quieres eliminar este elemento? Esta acción no se puede deshacer.",
       confirmText: "Eliminar",
       cancelText: "Cancelar",
-      onConfirm: () => {},
+      onConfirm: () => { },
     });
 
     if (!confirmed) return;
@@ -361,6 +380,8 @@ export default function ConsultarProductos() {
       codigoProveedor: valoresFiltros.codigoProveedor,
       codigoReferencia: valoresFiltros.codigoReferencia,
       lineaId: valoresFiltros.lineaId,
+      lineaDenominacion: valoresFiltros.lineaDenominacion,
+      superLineaDenominacion: valoresFiltros.superLineaDenominacion,
       marcaId: valoresFiltros.marcaId,
       proveedorId: valoresFiltros.proveedorId,
       conStock: valoresFiltros.conStock,
@@ -407,6 +428,8 @@ export default function ConsultarProductos() {
       codProveedorExacto: valoresFiltros.codProveedorExacto,
       codReferenciaExacto: valoresFiltros.codReferenciaExacto,
       lineaId: valoresFiltros.lineaId,
+      lineaDenominacion: valoresFiltros.lineaDenominacion,
+      superLineaDenominacion: valoresFiltros.superLineaDenominacion,
       marcaId: valoresFiltros.marcaId,
       proveedorId: valoresFiltros.proveedorId,
       conStock: valoresFiltros.conStock,
@@ -481,12 +504,32 @@ export default function ConsultarProductos() {
       scrollable: false,
     },
     {
-      header: "Precio", 
-      accessor:"precio",
-      flex:0.3,
-      type:"text", 
-      editable:false,
-      align:"left", 
+      // CR-002: Presentación del producto, junto al nombre.
+      header: "Presentación",
+      accessor: "presentacionCantidad",
+      flex: 0.4,
+      type: "text",
+      editable: false,
+      scrollable: false,
+      formatFunction: ({ row }) => {
+        const presentacion = crearPresentacion(
+          row.presentacionCantidad,
+          row.presentacionUnidadMedida
+        );
+        return (
+          <span className="text-gray-700">
+            {presentacion ? formatearPresentacion(presentacion) : "—"}
+          </span>
+        );
+      },
+    },
+    {
+      header: "Precio",
+      accessor: "precio",
+      flex: 0.3,
+      type: "text",
+      editable: false,
+      align: "left",
       formatFunction: ({ value }) => <span>${formatPrice(value)}</span>,
     }
   ];
@@ -511,38 +554,39 @@ export default function ConsultarProductos() {
             {/* Tabla de productos */}
             <Card className="border-gray-200 dark:border-slate-700">
               <div className="hidden lg:block">
-              {/*  HEADER Desktop */}
-              <ProductosHeader
-                roles={getRoles()}
-                codigo={codigo}
-                exacto={exacto}
-                onChangeCodigo={setCodigo}
-                onChangeExacto={setExacto}
-                onBuscarRapido={() => handleBuscarProductosRapido(true)}
-                onNuevo={openModal}
-                total={entidadesTotales}
-                mostrados={productos.length}
-                paginaActual={paginaActual}
-                onImprimirTodo={handleImprimirTodo}
-                onImprimirPagina={handleImprimirPagina}
-              />
+                {/*  HEADER Desktop */}
+                <ProductosHeader
+                  roles={getRoles()}
+                  codigo={codigo}
+                  exacto={exacto}
+                  onChangeCodigo={setCodigo}
+                  onChangeExacto={setExacto}
+                  onBuscarRapido={() => handleBuscarProductosRapido(true)}
+                  onNuevo={openModal}
+                  total={entidadesTotales}
+                  mostrados={productos.length}
+                  paginaActual={paginaActual}
+                  onImprimirTodo={handleImprimirTodo}
+                  onImprimirPagina={handleImprimirPagina}
+                  onAbrirAjusteMasivo={() => setMostrarAjusteMasivo(true)}
+                />
               </div>
 
               <div className="lg:hidden">
                 <ProductosHeaderLg
-                codigo={codigo}
-                exacto={exacto}
-                roles={getRoles()}
-                onChangeCodigo={setCodigo}
-                onChangeExacto={setExacto}
-                onBuscarRapido={() => handleBuscarProductosRapido(true)}
-                onNuevo={openModal}
-                total={entidadesTotales}
-                mostrados={productos.length}
-                paginaActual={paginaActual}
-                onImprimirTodo={handleImprimirTodo}
-                onImprimirPagina={handleImprimirPagina}
-              />
+                  codigo={codigo}
+                  exacto={exacto}
+                  roles={getRoles()}
+                  onChangeCodigo={setCodigo}
+                  onChangeExacto={setExacto}
+                  onBuscarRapido={() => handleBuscarProductosRapido(true)}
+                  onNuevo={openModal}
+                  total={entidadesTotales}
+                  mostrados={productos.length}
+                  paginaActual={paginaActual}
+                  onImprimirTodo={handleImprimirTodo}
+                  onImprimirPagina={handleImprimirPagina}
+                />
               </div>
 
               <CardContent className="p-0">
@@ -559,7 +603,7 @@ export default function ConsultarProductos() {
                   onHistorial={handleMostrarHistorialPrecios}
                   onNotificar={handleNotificar}
                 />
-                  
+
                 <div className="lg:hidden space-y-3">
                   {productos.map((producto) => (
                     <DatosCard
@@ -575,7 +619,7 @@ export default function ConsultarProductos() {
                     />
                   ))}
                 </div>
-                
+
 
 
               </CardContent>
@@ -592,11 +636,13 @@ export default function ConsultarProductos() {
             </div>
             <Alertas alerts={alerts} onRemove={removeAlert} />
             <AlertasConfirmacion />
+            {/* CR-006: diálogo de confirmación del ajuste masivo */}
+            <AlertasConfirmacionAjuste />
           </>
         )}
       </div>
 
-     {/* ================= MODALES ================= */}
+      {/* ================= MODALES ================= */}
       <ProductosModales
         isAltaOpen={isModalOpen}
         mostrarActualizarProducto={mostrarActualizarProducto}
@@ -638,6 +684,42 @@ export default function ConsultarProductos() {
       )}
       {/* =========================================== */}
 
+      {/* CR-006: modal de formulario de ajuste masivo */}
+      {mostrarAjusteMasivo && (
+        <AjustePreciosMasivoForm
+          onClose={() => setMostrarAjusteMasivo(false)}
+          onSubmitValues={(payload) =>
+            confirmarAjuste(payload, async (payloadConfirmado) => {
+              setMostrarAjusteMasivo(false);
+              try {
+                const response =
+                  await ProductoService.actualizarPreciosMasivo(
+                    payloadConfirmado,
+                  );
+                setResultadoAjuste(response);
+              } catch {
+                addAlert({
+                  type: TipoAlerta.ERROR,
+                  title: TituloAlerta.ERROR,
+                  message:
+                    "Ocurrió un error al intentar procesar el ajuste masivo.",
+                  autoClose: true,
+                  duration: 5000,
+                });
+              }
+            })
+          }
+        />
+      )}
+
+      {/* CR-006: modal de resumen de resultados */}
+      <AjustePreciosResultadoModal
+        resultado={resultadoAjuste}
+        onClose={() => {
+          setResultadoAjuste(null);
+          handleBuscarProductos();
+        }}
+      />
 
     </div>
   );

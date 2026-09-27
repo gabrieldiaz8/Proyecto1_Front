@@ -5,7 +5,7 @@ import { FormValues } from "../../producto/interfaces-validaciones-producto";
 
 const apiUrl = axiosConfig.apiUrl;
 
-const baseService = createCrudService<FormValues>("cambio-precios");
+const baseService = createCrudService<FormValues>("producto");
 
 const CambioPreciosMasivoService = {
   ...baseService,

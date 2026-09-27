@@ -10,6 +10,7 @@ interface CantidadesInputProps {
   disabled?: boolean;
   className?: string;
   maxDigits?: number; // ✅ Nueva prop opcional
+  decimalScale?: number; // decimales permitidos (0 por defecto, solo enteros)
   onChange: (value: number) => void;
   onKeyDown?: (e: React.KeyboardEvent<HTMLInputElement>) => void;
   inputRef?: React.Ref<HTMLInputElement>;
@@ -22,6 +23,7 @@ const CantidadesInput: React.FC<CantidadesInputProps> = ({
   disabled,
   className,
   maxDigits = 5, // ✅ Valor por defecto si no se pasa
+  decimalScale = 0,
   onChange,
   onKeyDown,
   inputRef,
@@ -42,7 +44,7 @@ const CantidadesInput: React.FC<CantidadesInputProps> = ({
           onKeyDown={onKeyDown}
           value={value}
           decimalSeparator=","
-          decimalScale={0}
+          decimalScale={decimalScale}
           disabled={disabled}
           allowNegative={false}
           onValueChange={(values) => {

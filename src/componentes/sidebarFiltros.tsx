@@ -10,6 +10,7 @@ import {
   CheckSquare,
   MapPin,
   Landmark,
+  Layers,
 } from "lucide-react";
 import { AnimatePresence, motion } from "framer-motion";
 import { Input } from "./ui/Input";
@@ -42,6 +43,8 @@ export interface FiltrosSideBar {
   codigoProveedor?: boolean;
   codigoReferencia?: boolean;
   linea?: boolean;
+  lineaDenominacion?: boolean;
+  superLineaDenominacion?: boolean;
   sublinea?: boolean;
   marca?: boolean;
   conStock?: boolean;
@@ -291,6 +294,76 @@ export function SidebarFiltros({ isOpen, onClose, onOpen }: Omit<SidebarProps, "
                                   setValoresFiltros({
                                     ...valoresFiltros,
                                     denominacion: e.target.value,
+                                  })
+                                }
+                              />
+                            </div>
+                          </div>
+                        </AccordionContent>
+                      </AccordionItem>
+                    )}
+
+                    {/* Filtro Denominación SuperLínea */}
+                    {filtrosNecesarios.superLineaDenominacion && (
+                      <AccordionItem
+                        value="superLineaDenominacion"
+                        className="border border-gray-200 dark:border-slate-600 rounded-lg"
+                      >
+                        <AccordionTrigger className="bg-gray-400 dark:bg-gray-700 px-4 py-3 hover:no-underline">
+                          <div className="flex items-center space-x-3">
+                            <Layers className="h-4 w-4 text-blue-600 dark:text-blue-400" />
+                            <span className="text-sm font-medium text-gray-700 dark:text-gray-300">S. Línea (Nombre)</span>
+                          </div>
+                        </AccordionTrigger>
+                        <AccordionContent className="px-4 pb-4">
+                          <div className="border-t border-gray-100 dark:border-slate-700 pt-4">
+                            <div className="relative">
+                              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-4 h-4" />
+                              <Input
+                                type="text"
+                                placeholder="Denominación SuperLínea..."
+                                name="superLineaDenominacion"
+                                className="pl-10 bg-white dark:bg-slate-700 border-gray-300 dark:border-slate-600 focus:border-blue-500 focus:ring-blue-500"
+                                value={valoresFiltros.superLineaDenominacion || ""}
+                                onChange={(e) =>
+                                  setValoresFiltros({
+                                    ...valoresFiltros,
+                                    superLineaDenominacion: e.target.value,
+                                  })
+                                }
+                              />
+                            </div>
+                          </div>
+                        </AccordionContent>
+                      </AccordionItem>
+                    )}
+
+                    {/* Filtro Denominación Línea (texto simple) */}
+                    {filtrosNecesarios.lineaDenominacion && (
+                      <AccordionItem
+                        value="lineaDenominacion"
+                        className="border border-gray-200 dark:border-slate-600 rounded-lg"
+                      >
+                        <AccordionTrigger className="bg-gray-400 dark:bg-gray-700 px-4 py-3 hover:no-underline">
+                          <div className="flex items-center space-x-3">
+                            <Building2 className="h-4 w-4 text-blue-600 dark:text-blue-400" />
+                            <span className="text-sm font-medium text-gray-700 dark:text-gray-300">Línea (Nombre)</span>
+                          </div>
+                        </AccordionTrigger>
+                        <AccordionContent className="px-4 pb-4">
+                          <div className="border-t border-gray-100 dark:border-slate-700 pt-4">
+                            <div className="relative">
+                              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-4 h-4" />
+                              <Input
+                                type="text"
+                                placeholder="Denominación Línea..."
+                                name="lineaDenominacion"
+                                className="pl-10 bg-white dark:bg-slate-700 border-gray-300 dark:border-slate-600 focus:border-blue-500 focus:ring-blue-500"
+                                value={valoresFiltros.lineaDenominacion || ""}
+                                onChange={(e) =>
+                                  setValoresFiltros({
+                                    ...valoresFiltros,
+                                    lineaDenominacion: e.target.value,
                                   })
                                 }
                               />

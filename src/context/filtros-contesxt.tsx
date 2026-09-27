@@ -14,6 +14,8 @@ interface ValoresFiltros {
   denominacionSublinea?: string;
   marcaId?: number;
   denominacionMarca?: string;
+  lineaDenominacion?: string;
+  superLineaDenominacion?: string;
   conStock?: boolean;
   fechaDesde?: string;
   fechaHasta?: string;

@@ -234,6 +234,7 @@ export function TablaAGGrid<T extends Record<string, any>>({
   return (
       <div className="ag-theme-alpine dark:ag-theme-alpine-dark" style={height ? { height } : undefined}>
         <AgGridReact
+          theme="legacy"
           ref={gridRef}
           rowData={data}
           columnDefs={columnDefs}

@@ -4,6 +4,11 @@ import { AlicuotaIva } from "../../../../interfaces/generales/interfaces-general
 import { Producto } from "../../../../interfaces/gestion-producto/producto/interfaces-producto";
 import { ItemProveedor } from "../../../../interfaces/gestion-producto/producto/interfaces-item-proveedor";
 import { ItemProdAlternativo } from "../../../../interfaces/gestion-producto/producto/interfaces-item-prod-alternativo";
+import {
+  UnidadMedida,
+  PresentacionPayload,
+  esUnidadMedidaValida,
+} from "../../../../interfaces/gestion-producto/presentacion/interfaces-presentacion";
 
 //===================== interfaces para las cosas que se van a ingresar en el formulario y es necesario validarlas ==========//
 
@@ -15,7 +20,6 @@ export interface FormValues {
   codigoBarra?: string | null;
   stock?: number | null;
   costo?: number | null;
-  precio?: number | null;
   porcentaje?: number | null;
   /* costoEnDolar?: boolean | null;
   costoDolar?: number | null;
@@ -25,8 +29,10 @@ export interface FormValues {
   marcaId: number;
   /* subLineaId?: number | null */
   alicuotaIva: number | null;
-  /* ubicacion?: string | null;
-  presentacionId: number; */
+  /* ubicacion?: string | null; */
+  // CR-002: Presentación del producto (Value Object: cantidad + unidad).
+  presentacionCantidad?: number | null;
+  presentacionUnidadMedida?: UnidadMedida | null;
   stockMinimo?: number;
   cantidadPorPack?: number;
   utilizaStockMinimo?: boolean;
@@ -57,20 +63,31 @@ export const schema = (utilizaStockMinimo: boolean, utilizaPack: boolean, usaOfe
       .trim()
       .lowercase()
       .required("La denominación es obligatoria.")
+      .test("not-only-spaces", "La denominación no puede contener solo espacios.", (value) => {
+        return value ? value.trim().length > 0 : false;
+      })
       .max(255, "Máximo 255 caracteres.")
-      .matches(/^[A-Za-z0-9 %-_"'áéíóúÁÉÍÓÚñÑ./]+$/, "Solo se permiten letras, números y espacios."),
+      .matches(/^[A-Za-z0-9 %\-_"'áéíóúÁÉÍÓÚñÑ./]+$/, "Solo se permiten letras, números y espacios."),
     observacion: yup.string().optional().nullable(),
     codigoProveedor: yup.string().optional().nullable(),
     codigoReferencia: yup.string().optional().nullable(),
     codigoBarra: yup.string().optional().max(255, "Máximo 255 caracteres.").nullable(),
     stock: yup.number().optional().nullable(),
-    costo: yup.number().typeError("El costo debe ser un valor númerico").required("El costo es obligatorio").min(0,"El costo debe ser mayor o igual a 0"),
-    precio: yup.number().typeError("El precio debe ser un valor númerico").required("El precio es obligatorio").min(0,"El costo debe ser mayor o igual a 0").test("precio-mayor-o-igual-costo","El precio debe ser mayor o igual que el costo", function(value){
-      const {costo} = this.parent;
-      if (value==null || costo == null ) return true;
-      return value>= costo;
-    }),
-    porcentaje: yup.number().typeError("El porcentaje debe ser un valor númerico").min(0,"El porcentaje mínimo debe ser mayor o igual a 0").max(999, "El porcentaje máximo permitido es de 999").optional().nullable(),
+    costo: yup.number().typeError("El costo debe ser un valor númerico").required("El costo es obligatorio").min(0,"El costo debe ser mayor o igual a 0")
+      .test("precio-no-infinity-costo", "El costo es demasiado grande y causa un desbordamiento en el cálculo del precio.", function(costoValue) {
+        const { porcentaje } = this.parent;
+        if (costoValue == null) return true;
+        const porcentajeVal = porcentaje ?? 0;
+        const precioCalculado = costoValue * (1 + porcentajeVal / 100);
+        return precioCalculado !== Infinity && !isNaN(precioCalculado);
+      }),
+    porcentaje: yup.number().typeError("El porcentaje debe ser un valor númerico").min(0,"El porcentaje mínimo debe ser mayor o igual a 0").max(999, "El porcentaje máximo permitido es de 999").optional().default(0).nullable()
+      .test("precio-no-infinity-porcentaje", "El porcentaje es demasiado grande y causa un desbordamiento en el cálculo del precio.", function(porcentajeValue) {
+        const { costo } = this.parent;
+        if (porcentajeValue == null || costo == null) return true;
+        const precioCalculado = costo * (1 + porcentajeValue / 100);
+        return precioCalculado !== Infinity && !isNaN(precioCalculado);
+      }),
     /* costoEnDolar: yup.boolean().optional().nullable(),
     costoDolar: yup.number().optional().nullable(),
     destacado: yup.boolean().optional().nullable(),
@@ -92,12 +109,24 @@ export const schema = (utilizaStockMinimo: boolean, utilizaPack: boolean, usaOfe
       .oneOf(Object.values(AlicuotaIva), "Alicuota IVA inválida")
       .required("La alícuota IVA es obligatoria.")
       .nullable(),
-    /* ubicacion: yup.string().optional().max(255, "Máximo 255 caracteres.").nullable(),
-    presentacionId: yup
+    /* ubicacion: yup.string().optional().max(255, "Máximo 255 caracteres.").nullable(), */
+    // CR-002: todo producto debe tener una presentación válida (cantidad > 0 y unidad reconocida).
+    presentacionCantidad: yup
       .number()
-      .typeError("La unidad de medida es obligatoria.")
-      .required("La unidad de medida es obligatoria."),
-    subLineaId: yup
+      .typeError("La cantidad de la presentación debe ser un valor numérico.")
+      .transform((value, originalValue) => (originalValue === "" ? null : value))
+      .required("La cantidad de la presentación es obligatoria.")
+      .moreThan(0, "La cantidad de la presentación debe ser un número mayor a 0.")
+      .nullable(),
+    presentacionUnidadMedida: yup
+      .string()
+      .required("La unidad de medida de la presentación es obligatoria.")
+      .oneOf(
+        Object.values(UnidadMedida) as string[],
+        "La unidad de medida debe ser una de: KG, G, L, ML, UN, CC, LT, MG."
+      )
+      .nullable(),
+    /* subLineaId: yup
     .number()
     .typeError("La sublinea es obligatoria.")
     .optional()
@@ -164,8 +193,7 @@ export const transformData = (producto: Producto): FormValues => {
     codigoBarra: producto.codigoBarra ?? null,
     stock: producto.stock ?? null,
     costo: producto.costo ?? null,
-    precio: producto.precio ?? null,
-    porcentaje: producto.porcentaje ?? null,
+    porcentaje: producto.porcentaje ?? 0,
    // oferta: producto.oferta ?? null,
     /* costoEnDolar: producto.costoEnDolar ?? null,
     costoDolar: producto.costoDolar ?? null,
@@ -179,6 +207,8 @@ export const transformData = (producto: Producto): FormValues => {
    /*  subLineaId: producto.sublinea?.id ?? 0,
     presentacionId: producto.presentacion.id ?? 0,
  */
+    presentacionCantidad: producto.presentacionCantidad ?? null,
+    presentacionUnidadMedida: producto.presentacionUnidadMedida ?? null,
     stockMinimo: producto.stockMinimo ?? null,
     cantidadPorPack: producto.cantidadPorPack ?? null,
     utilizaStockMinimo: producto.utilizaStockMinimo,
@@ -194,6 +224,18 @@ export const transformData = (producto: Producto): FormValues => {
      */
   };
 };
+
+/**
+ * Mapea el Value Object Presentación a los campos planos que espera el backend
+ * (CreateProductoDto / UpdateProductoDto: presentacionCantidad + presentacionUnidadMedida).
+ */
+export const transformPresentacion = (
+  presentacionCantidad: number | null | undefined,
+  presentacionUnidadMedida: string | null | undefined
+): PresentacionPayload => ({
+  presentacionCantidad: presentacionCantidad ?? null,
+  presentacionUnidadMedida: esUnidadMedidaValida(presentacionUnidadMedida) ? presentacionUnidadMedida : null,
+});
 
 export const transformarItemsProveedor = (items: ItemProveedor[]): ItemsProveedorEnPayload[] => {
   return items.map((item) => ({
